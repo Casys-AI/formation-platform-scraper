@@ -1,18 +1,24 @@
 # Formation Platform Scraper
 
-A scraper for formations hosted on [Teachizy](https://www.teachizy.fr/), a French course-hosting SaaS. It extracts full lesson content, transcribes embedded media with Whisper, qualifies external links, generates a pedagogical knowledge graph, and exports everything to structured Markdown.
+**English** · [Français](README.fr.md)
 
-## Features
+A scraper for online courses hosted on [Teachizy](https://www.teachizy.fr/), the French course-hosting SaaS — organised around one idea: **the course is in the video, not in the page**.
 
-- **Direct authentication** — logs in on the school's formation domain and keeps the session across requests
-- **Course discovery** — extracts the complete course structure (chapters + lessons)
-- **Content extraction** — full text, headings, lists, and links per lesson
-- **Media transcription** — auto-transcribes YouTube/Vimeo/MP3 media with Whisper, with a bot-detection bypass for datacenter servers
-- **AI content formatting** — normalizes and summarizes raw extracted content
-- **Link qualification** — AI-powered summaries and quality scores for external links, with broken-link detection and replacement search
-- **Knowledge graph** — generates a pedagogical knowledge graph across extracted lessons
-- **Checkpoint / resume** — extraction and media processing can resume from where they left off, based on what's already on disk
-- **Markdown export** — structured output with YAML frontmatter per lesson
+Open a lesson and read its HTML: a title, a few lines, a link or two. The teaching itself — the part you paid for — is spoken, inside a video the markup only points at. A scraper that reads text alone comes back with the shell and misses the substance. This one goes after the video: every clip, whether on YouTube, Vimeo, MP3 or a direct/S3 URL, is downloaded and transcribed with Whisper, so the spoken course becomes searchable text.
+
+The second idea is structure. A formation is a tree — chapters, lessons, quizzes, attached resources — and the scraper walks all of it, exporting one Markdown file per lesson with the transcription, the qualified links and the metadata folded in.
+
+The third is what comes after extraction. A pedagogical analyser reads the whole corpus and builds a **knowledge graph**: which tools and concepts are taught, which are practised versus merely mentioned, and how they progress chapter by chapter — ready for indexing or RAG.
+
+It is **specialised, not generic**: it knows Teachizy — its login, its `/mon-espace` layout, its lesson and quiz mechanics — and that knowledge is the point.
+
+## Why it might interest you
+
+- **It goes after the video.** The substance of a course is spoken, not written. Whisper transcribes every embedded clip so the lesson's real content becomes text you can search, index and feed to a model — where the page gave you only a title.
+- **A knowledge graph, not a folder of files.** Beyond raw extraction, it maps what a formation actually teaches: tools used vs. mentioned, first appearance per chapter, concept density, a technology × chapter matrix — exported as HTML, Markdown and PDF.
+- **A learner's login, not an admin's.** Authentication is a single direct login on the school's own domain. No platform back-office, no admin rights — the credentials you use to follow the course are all it needs.
+- **Resumable by design.** Downloads and transcriptions track their own state on disk; interrupt a 200-lesson run and restart the same command — it picks up where it stopped.
+- **Fails loud on cost.** Media and transcription are the expensive steps; a dry-run mode counts them and estimates the bill before a single API call is paid for.
 
 ## Prerequisites
 
