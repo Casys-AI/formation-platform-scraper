@@ -1,0 +1,386 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Formation Platform Scraper Configuration",
+  "description": "Configuration for extracting content from Teachizy-hosted formations",
+  "type": "object",
+  "required": ["formationUrl", "mode"],
+  "properties": {
+    "formationUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of the formation to scrape (REQUIRED). Must point at the tenant's custom domain, not app.teachizy.fr. Example: https://formations.example.academy/mon-espace/formations/my-course",
+      "pattern": "^https://[^/]+/mon-espace/formations/[^/]+",
+      "examples": [
+        "https://formations.example.academy/mon-espace/formations/my-course",
+        "https://formations.example.academy/mon-espace/formations/another-course"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["chapters", "types", "all", "specific-lessons"],
+      "description": "Extraction mode:\n- chapters: Extract specific chapters by number\n- types: Extract lessons by emoji type (📚, ✍️, etc.)\n- all: Extract all lessons from the course\n- specific-lessons: Extract specific lessons by ID",
+      "default": "all"
+    },
+    "chapters": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "description": "List of chapter numbers to extract (required when mode='chapters')",
+      "examples": [[1, 2, 3], [5, 7, 11]]
+    },
+    "types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["📚", "✍️", "📔", "🧠", "🔥"]
+      },
+      "description": "List of lesson type emojis to extract (required when mode='types'):\n- 📚 = Video lesson\n- ✍️ = Exercise\n- 📔 = Documentation\n- 🧠 = Quiz\n- 🔥 = Important content",
+      "examples": [["📚", "✍️"], ["🔥"]]
+    },
+    "lessonIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9]+$"
+      },
+      "description": "List of specific lesson IDs to extract (required when mode='specific-lessons')",
+      "examples": [["1021240", "1043071"], ["1021238"]]
+    },
+    "rateLimit": {
+      "type": "object",
+      "properties": {
+        "delayMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Delay in milliseconds between lesson extractions",
+          "default": 2000
+        },
+        "enableRateLimit": {
+          "type": "boolean",
+          "description": "Enable rate limiting to avoid overwhelming the server",
+          "default": true
+        }
+      },
+      "required": ["delayMs", "enableRateLimit"]
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "saveJson": {
+          "type": "boolean",
+          "description": "Save lesson data as JSON files",
+          "default": true
+        },
+        "saveMarkdown": {
+          "type": "boolean",
+          "description": "Save lesson content as Markdown files",
+          "default": true
+        }
+      },
+      "required": ["saveJson", "saveMarkdown"]
+    },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "skipQuizzes": {
+          "type": "boolean",
+          "description": "Skip quiz lessons (🧠)",
+          "default": true
+        },
+        "skipAncChapters": {
+          "type": "boolean",
+          "description": "Skip ANC (Annex/Complementary) chapters",
+          "default": true
+        },
+        "allowedTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of allowed lesson types (emojis). NOTE: Not yet implemented, use skipQuizzes instead.",
+          "default": ["📚", "✍️", "📔", "🧠", "🔥"]
+        }
+      },
+      "required": ["skipQuizzes", "skipAncChapters"]
+    },
+    "media": {
+      "type": "object",
+      "properties": {
+        "skipMedia": {
+          "type": "boolean",
+          "description": "Skip all media processing (download + transcription)",
+          "default": false
+        },
+        "skipTranscribe": {
+          "type": "boolean",
+          "description": "Download media but skip transcription (useful for cost control)",
+          "default": false
+        },
+        "skipScreenshots": {
+          "type": "boolean",
+          "description": "Skip thumbnail/screenshot extraction from videos",
+          "default": false
+        },
+        "resumeMode": {
+          "type": "boolean",
+          "description": "Resume incomplete downloads/transcriptions (skip already completed media). Loads existing JSONs to check status.",
+          "default": true
+        },
+        "verifyDiskFiles": {
+          "type": "boolean",
+          "description": "Verify files exist on disk before skipping (safety net for corrupted JSONs). Only works when resumeMode=true.",
+          "default": false
+        }
+      },
+      "required": ["skipMedia", "skipTranscribe", "skipScreenshots"]
+    },
+    "proxy": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable proxy for YouTube access (required for residential IP bypass)",
+          "default": false
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Proxy URL (e.g., http://127.0.0.1:9090 for SSH tunnel)",
+          "examples": ["http://127.0.0.1:9090", "http://proxy.example.com:8080"]
+        }
+      },
+      "required": ["enabled", "url"]
+    },
+    "antiDetection": {
+      "type": "object",
+      "description": "Anti-detection measures for YouTube scraping (avoid bot detection)",
+      "properties": {
+        "enableRandomJitter": {
+          "type": "boolean",
+          "description": "Add ±40% random variation to delays (makes timing less predictable)",
+          "default": true
+        },
+        "exponentialBackoff": {
+          "type": "boolean",
+          "description": "Use exponential backoff for retries (2^attempt seconds)",
+          "default": true
+        },
+        "circuitBreakerThreshold": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Stop after N consecutive YouTube errors (0 = disabled, recommended: 5)",
+          "default": 5
+        },
+        "cookiesFrom": {
+          "type": "string",
+          "enum": ["chrome", "firefox", "edge", "safari"],
+          "description": "Extract cookies from browser to authenticate YouTube requests (optional)"
+        },
+        "customHeaders": {
+          "type": "object",
+          "properties": {
+            "userAgent": {
+              "type": "string",
+              "description": "Custom User-Agent header (default: yt-dlp's realistic UA)"
+            },
+            "acceptLanguage": {
+              "type": "string",
+              "description": "Accept-Language header (e.g., 'fr-FR,fr;q=0.9,en;q=0.8')",
+              "default": "fr-FR,fr;q=0.9,en;q=0.8"
+            },
+            "referer": {
+              "type": "string",
+              "format": "uri",
+              "description": "Referer header (optional, for additional authenticity)"
+            }
+          }
+        }
+      }
+    },
+    "formatting": {
+      "type": "object",
+      "description": "AI content formatting and summarization (Story 6.5)",
+      "properties": {
+        "skipFormatting": {
+          "type": "boolean",
+          "description": "Skip AI formatting/summarization entirely (keep raw fullContent from Story 6)",
+          "default": false
+        },
+        "formattingOnlyMode": {
+          "type": "boolean",
+          "description": "Skip content extraction if fullContent already exists. Only applies formatting. Saves time and platform requests when only formatting is missing.",
+          "default": false
+        },
+        "model": {
+          "type": "string",
+          "enum": ["gpt-4.1", "gpt-5.1"],
+          "description": "AI model for content formatting:\n- gpt-4.1: Standard model, good quality/cost balance (~$4 for 259 lessons)\n- gpt-5: Premium model with reasoning, slightly cheaper input (~$3.60 for 259 lessons)",
+          "default": "gpt-4.1"
+        }
+      },
+      "required": ["skipFormatting", "model"]
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Estimation mode: count media, estimate transcription costs, no actual downloads/transcription. Mutually exclusive with resumeMode.",
+      "default": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "mode": { "const": "chapters" } }
+      },
+      "then": {
+        "properties": {
+          "chapters": {
+            "minItems": 1
+          }
+        },
+        "required": ["chapters"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "mode": { "const": "types" } }
+      },
+      "then": {
+        "properties": {
+          "types": {
+            "minItems": 1
+          }
+        },
+        "required": ["types"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "mode": { "const": "specific-lessons" } }
+      },
+      "then": {
+        "properties": {
+          "lessonIds": {
+            "minItems": 1
+          }
+        },
+        "required": ["lessonIds"]
+      }
+    }
+  ],
+  "examples": [
+    {
+      "$comment": "Extract all chapters with full media processing and resume mode",
+      "formationUrl": "https://formations.example.academy/mon-espace/formations/my-course",
+      "mode": "chapters",
+      "chapters": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "types": [],
+      "lessonIds": [],
+      "rateLimit": {
+        "delayMs": 2000,
+        "enableRateLimit": true
+      },
+      "output": {
+        "saveJson": true,
+        "saveMarkdown": true
+      },
+      "filters": {
+        "skipQuizzes": true,
+        "skipAncChapters": true,
+        "allowedTypes": ["📚", "✍️", "📔", "🧠", "🔥"]
+      },
+      "media": {
+        "skipMedia": false,
+        "skipTranscribe": false,
+        "skipScreenshots": false,
+        "resumeMode": true,
+        "verifyDiskFiles": true
+      },
+      "proxy": {
+        "enabled": true,
+        "url": "http://127.0.0.1:9090"
+      },
+      "antiDetection": {
+        "enableRandomJitter": true,
+        "exponentialBackoff": true,
+        "circuitBreakerThreshold": 5,
+        "customHeaders": {
+          "acceptLanguage": "fr-FR,fr;q=0.9,en;q=0.8"
+        }
+      },
+      "formatting": {
+        "skipFormatting": false,
+        "model": "gpt-4.1"
+      }
+    },
+    {
+      "$comment": "Extract specific lessons only",
+      "formationUrl": "https://formations.example.academy/mon-espace/formations/my-course",
+      "mode": "specific-lessons",
+      "chapters": [],
+      "types": [],
+      "lessonIds": ["1021240", "1043071", "1043201"],
+      "rateLimit": {
+        "delayMs": 2000,
+        "enableRateLimit": true
+      },
+      "output": {
+        "saveJson": true,
+        "saveMarkdown": true
+      },
+      "filters": {
+        "skipQuizzes": true,
+        "skipAncChapters": true,
+        "allowedTypes": ["📚", "✍️", "📔", "🧠", "🔥"]
+      },
+      "media": {
+        "skipMedia": false,
+        "skipTranscribe": false,
+        "skipScreenshots": false,
+        "resumeMode": true,
+        "verifyDiskFiles": true
+      },
+      "proxy": {
+        "enabled": true,
+        "url": "http://127.0.0.1:9090"
+      },
+      "formatting": {
+        "skipFormatting": false,
+        "model": "gpt-4.1"
+      }
+    },
+    {
+      "$comment": "Dry run mode - estimate costs without downloading",
+      "formationUrl": "https://formations.example.academy/mon-espace/formations/my-course",
+      "mode": "all",
+      "chapters": [],
+      "types": [],
+      "lessonIds": [],
+      "rateLimit": {
+        "delayMs": 1000,
+        "enableRateLimit": true
+      },
+      "output": {
+        "saveJson": true,
+        "saveMarkdown": true
+      },
+      "filters": {
+        "skipQuizzes": true,
+        "skipAncChapters": true,
+        "allowedTypes": ["📚", "✍️", "📔", "🧠", "🔥"]
+      },
+      "media": {
+        "skipMedia": false,
+        "skipTranscribe": false,
+        "skipScreenshots": false,
+        "resumeMode": false
+      },
+      "formatting": {
+        "skipFormatting": true,
+        "model": "gpt-4.1"
+      },
+      "dryRun": true
+    }
+  ]
+}

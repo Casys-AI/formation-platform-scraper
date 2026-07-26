@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+mcp-server/node_modules/
+
+# Build output
+dist/
+mcp-server/dist/
+
+# Environment
+.env
+.env.local
+
+# Scraper output & media
+output/
+media/
+
+# Logs
+*.log
+logs/
+
+# Runtime artifacts
+scraper-progress.json
+broken-links-report.md
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,18 @@
+{
+  "courseSlug": "my-course",
+  "concurrency": 10,
+  "timeout": 10000,
+  "dryRun": false,
+  "output": {
+    "saveReport": true,
+    "reportPath": "broken-links-report.md"
+  },
+  "healthCheck": {
+    "skipOk": false,
+    "retryFailed": true,
+    "retries": 2
+  },
+  "replacementSearch": {
+    "enabled": true
+  }
+}
