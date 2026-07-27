@@ -18,28 +18,28 @@ async function main() {
     }
 
     logger.info('Authenticating...');
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     logger.info('Navigating to index page...');
-    await mcpClient.navigate(formationUrl);
+    await browser.navigate(formationUrl);
 
     logger.info('Waiting 5 seconds...');
-    await mcpClient.waitFor({ timeout: 5000 });
+    await browser.waitFor({ timeout: 5000 });
 
     logger.info('Taking screenshot...');
-    await mcpClient.screenshot({ filename: 'debug-after-5s.png' });
+    await browser.screenshot({ filename: 'debug-after-5s.png' });
 
     logger.info('Waiting 10 more seconds...');
-    await mcpClient.waitFor({ timeout: 10000 });
+    await browser.waitFor({ timeout: 10000 });
 
     logger.info('Taking second screenshot...');
-    await mcpClient.screenshot({ filename: 'debug-after-15s.png' });
+    await browser.screenshot({ filename: 'debug-after-15s.png' });
 
     // Check h2 count again
-    const h2Count = await mcpClient.evaluate(`document.querySelectorAll('h2').length`);
+    const h2Count = await browser.evaluate(`document.querySelectorAll('h2').length`);
     logger.info({ h2Count }, 'h2 count after 15 seconds');
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
     logger.info('Done - check debug-after-5s.png and debug-after-15s.png');
   } catch (error) {
     console.error('ERROR:', error);

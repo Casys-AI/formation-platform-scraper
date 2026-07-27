@@ -139,7 +139,7 @@ export function loadConfig(configPath: string = 'extraction-config.json'): Extra
  * sub-objects are never altered.
  *
  * Recognized: DELAY_BETWEEN_PAGES_MS, DOWNLOAD_MEDIA, TRANSCRIBE_MEDIA.
- * (PLAYWRIGHT_HEADLESS and LOG_LEVEL are handled by the MCP server / logger.)
+ * (PLAYWRIGHT_HEADLESS and LOG_LEVEL are handled by the browser / logger.)
  */
 export function applyEnvOverrides(config: ExtractionConfig): void {
   const { DELAY_BETWEEN_PAGES_MS, DOWNLOAD_MEDIA, TRANSCRIBE_MEDIA } = process.env;

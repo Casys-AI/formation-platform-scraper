@@ -42,15 +42,15 @@ async function discoverCommand() {
     }
 
     // Authenticate
-    const mcpClient = await authenticate({ email, password }, config.formationUrl);
+    const browser = await authenticate({ email, password }, config.formationUrl);
 
     spinner.text = 'Extracting course structure...';
 
     // Run discovery with formation URL from config
-    const structure = await discoverCourseStructure(mcpClient, config.formationUrl, { maxChapters: undefined });
+    const structure = await discoverCourseStructure(browser, config.formationUrl, { maxChapters: undefined });
 
     // Cleanup
-    await mcpClient.disconnect();
+    await browser.disconnect();
 
     spinner.stop();
 

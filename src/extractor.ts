@@ -11,7 +11,7 @@
  * - qualifiedLinks populated in Story 7 (AI analysis)
  */
 
-import type { MCPClient } from './mcp-client.js';
+import type { Browser } from './browser.js';
 import type { CourseStructure, LessonContent, CompleteLesson, MediaContent, Chapter, LessonMetadata } from './types.js';
 import type { ExtractionConfig } from './config.js';
 import { createLogger, sleep } from './utils.js';
@@ -57,13 +57,13 @@ function findLessonInStructure(
  * Extract content from a single lesson page
  *
  * @param lessonId Lesson ID to extract
- * @param mcpClient Authenticated MCP client with active session
+ * @param browser Authenticated browser with active session
  * @param courseStructure Course structure (for lesson metadata lookup)
  * @returns Complete lesson with content, media, and metadata
  */
 export async function extractLessonContent(
   lessonId: string,
-  mcpClient: MCPClient,
+  browser: Browser,
   courseStructure: CourseStructure
 ): Promise<CompleteLesson> {
   logger.info({ lessonId }, '📄 Extracting lesson content');
@@ -86,15 +86,15 @@ export async function extractLessonContent(
   // 4. Navigate to lesson page
   const url = `${courseStructure.origin}/mon-espace/formations/${courseStructure.slug}/elements/${lessonId}`;
   logger.debug({ url }, 'Navigating to lesson');
-  await mcpClient.navigate(url);
+  await browser.navigate(url);
 
   // 5. Wait for dynamic content to load
   logger.debug({ timeout: TIMEOUTS.PAGE_LOAD }, '⏳ Waiting for page load');
-  await mcpClient.waitFor({ timeout: TIMEOUTS.PAGE_LOAD });
+  await browser.waitFor({ timeout: TIMEOUTS.PAGE_LOAD });
 
   // 6. Extract content via evaluate() - runs in browser context
   logger.debug('📊 Extracting content from DOM');
-  const extracted = await mcpClient.evaluate(`
+  const extracted = await browser.evaluate(`
     (() => {
       // ============================================================================
       // Error Handling & Logging Helpers
@@ -861,13 +861,13 @@ export async function extractLessonContent(
  * Extract all lessons from a specific chapter
  *
  * @param chapterNumber Chapter number to extract (1-based)
- * @param mcpClient Authenticated MCP client with active session
+ * @param browser Authenticated browser with active session
  * @param courseStructure Course structure
  * @returns Array of complete lessons
  */
 export async function extractChapterLessons(
   chapterNumber: number,
-  mcpClient: MCPClient,
+  browser: Browser,
   courseStructure: CourseStructure,
   config: ExtractionConfig
 ): Promise<CompleteLesson[]> {
@@ -906,7 +906,7 @@ export async function extractChapterLessons(
         const { autoCompleteQuiz } = await import('./quiz-validator.js');
         const quizUrl = `${config.formationUrl}/elements/${lessonMeta.id}`;
         logger.info({ lessonId: lessonMeta.id }, '🎯 Auto-completing skipped quiz...');
-        const result = await autoCompleteQuiz(mcpClient, quizUrl);
+        const result = await autoCompleteQuiz(browser, quizUrl);
 
         if (result.success) {
           logger.info({ lessonId: lessonMeta.id, questionCount: result.questionCount }, '✅ Quiz auto-completed successfully');
@@ -924,7 +924,7 @@ export async function extractChapterLessons(
     }
 
     try {
-      const completeLesson = await extractLessonContent(lessonMeta.id, mcpClient, courseStructure);
+      const completeLesson = await extractLessonContent(lessonMeta.id, browser, courseStructure);
       results.push(completeLesson);
 
       // Story 10: Mark lesson as complete after extraction if auto-validation is enabled
@@ -933,7 +933,7 @@ export async function extractChapterLessons(
         const lessonUrl = `${config.formationUrl}/elements/${lessonMeta.id}`;
         logger.info({ lessonId: lessonMeta.id }, '🔘 Marking lesson as complete');
         await markLessonComplete(
-          mcpClient,
+          browser,
           lessonUrl,
           config.lessonCompletion?.waitAfterConfirm || 2000
         );
@@ -965,13 +965,13 @@ export async function extractChapterLessons(
  * Extract all lessons of a specific type (by emoji)
  *
  * @param lessonType Lesson type emoji (📚, ✍️, 📔, 🔥)
- * @param mcpClient Authenticated MCP client with active session
+ * @param browser Authenticated browser with active session
  * @param courseStructure Course structure
  * @returns Array of complete lessons
  */
 export async function extractLessonsByType(
   lessonType: string,
-  mcpClient: MCPClient,
+  browser: Browser,
   courseStructure: CourseStructure,
   config: ExtractionConfig
 ): Promise<CompleteLesson[]> {
@@ -1012,7 +1012,7 @@ export async function extractLessonsByType(
     const lessonIdx = index + 1; // 1-based index
 
     try {
-      const completeLesson = await extractLessonContent(lessonMeta.id, mcpClient, courseStructure);
+      const completeLesson = await extractLessonContent(lessonMeta.id, browser, courseStructure);
       results.push(completeLesson);
 
       // Story 10: Mark lesson as complete after extraction if auto-validation is enabled
@@ -1021,7 +1021,7 @@ export async function extractLessonsByType(
         const lessonUrl = `${config.formationUrl}/elements/${lessonMeta.id}`;
         logger.info({ lessonId: lessonMeta.id }, '🔘 Marking lesson as complete');
         await markLessonComplete(
-          mcpClient,
+          browser,
           lessonUrl,
           config.lessonCompletion?.waitAfterConfirm || 2000
         );

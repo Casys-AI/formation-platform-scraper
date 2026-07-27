@@ -38,7 +38,7 @@ function isQuiz(lesson: LessonMetadata): boolean {
 async function processLessonStream(
   lessons: LessonMetadata[],
   context: {
-    mcpClient: any;
+    browser: any;
     structure: CourseStructure;
     config: ExtractionConfig;
     outputDir: string;
@@ -49,7 +49,7 @@ async function processLessonStream(
     progressLabel?: string; // e.g., "Chapter 2" or "Type 📝" for logging
   }
 ): Promise<void> {
-  const { mcpClient, structure, config, outputDir, chapterNum, mediaStats, formattingStats, extractedLessons, progressLabel } = context;
+  const { browser, structure, config, outputDir, chapterNum, mediaStats, formattingStats, extractedLessons, progressLabel } = context;
   const totalLessons = lessons.length;
 
   logger.info({ totalLessons, progressLabel }, `🔄 Starting stream processing of ${totalLessons} lessons${progressLabel ? ` (${progressLabel})` : ''}`);
@@ -72,7 +72,7 @@ async function processLessonStream(
         const quizUrl = `${config.formationUrl}/elements/${lessonMeta.id}`;
         logger.info({ lessonId: lessonMeta.id }, '🎯 Auto-completing quiz...');
 
-        const result = await autoCompleteQuiz(mcpClient, quizUrl);
+        const result = await autoCompleteQuiz(browser, quizUrl);
 
         if (result.success) {
           logger.info({ lessonId: lessonMeta.id, questionCount: result.questionCount }, '✅ Quiz auto-completed successfully');
@@ -128,13 +128,13 @@ async function processLessonStream(
               const lessonUrl = `${config.formationUrl}/elements/${lessonMeta.id}`;
 
               // Check completion status on platform
-              const alreadyComplete = await isLessonAlreadyComplete(mcpClient, lessonUrl);
+              const alreadyComplete = await isLessonAlreadyComplete(browser, lessonUrl);
 
               if (alreadyComplete) {
                 logger.info({ lessonId: lessonMeta.id }, '✅ Lesson already marked as complete (skipping re-mark)');
               } else {
                 logger.info({ lessonId: lessonMeta.id }, '🔘 Re-marking skipped lesson as complete');
-                await markLessonComplete(mcpClient, lessonUrl, config.lessonCompletion?.waitAfterConfirm || 2000);
+                await markLessonComplete(browser, lessonUrl, config.lessonCompletion?.waitAfterConfirm || 2000);
                 logger.info({ lessonId: lessonMeta.id }, '✅ Lesson re-marked as complete');
               }
             }
@@ -161,7 +161,7 @@ async function processLessonStream(
     // Extract ONE lesson at a time (stream processing)
     try {
       logger.info({ lessonId: lessonMeta.id }, '📥 Extracting lesson content...');
-      const lesson = await extractLessonContent(lessonMeta.id, mcpClient, structure);
+      const lesson = await extractLessonContent(lessonMeta.id, browser, structure);
       logger.info({ lessonId: lessonMeta.id, contentLength: lesson.content.mainContent.length }, '✅ Lesson content extracted');
 
       // Check if lesson is locked (indicates quiz completion failed)
@@ -236,7 +236,7 @@ async function processLessonStream(
       if (config.lessonCompletion?.autoValidate) {
         const lessonUrl = `${config.formationUrl}/elements/${lessonMeta.id}`;
         logger.info({ lessonId: lessonMeta.id }, '🔘 Marking lesson as complete');
-        await markLessonComplete(mcpClient, lessonUrl, config.lessonCompletion?.waitAfterConfirm || 2000);
+        await markLessonComplete(browser, lessonUrl, config.lessonCompletion?.waitAfterConfirm || 2000);
         logger.info({ lessonId: lessonMeta.id }, '✅ Lesson marked as complete');
       }
     } catch (error) {
@@ -342,7 +342,7 @@ async function main() {
     }
 
     // 4. Authenticate (dual auth: Teachizy + tenant) - only if needed
-    let mcpClient: any = null;
+    let browser: any = null;
 
     if (needsAuth) {
       logger.info('🔐 Authenticating...');
@@ -354,7 +354,7 @@ async function main() {
         throw new Error('Missing credentials in .env file (FORMATION_EMAIL, FORMATION_PASSWORD)');
       }
 
-      mcpClient = await authenticate({ email, password }, config.formationUrl);
+      browser = await authenticate({ email, password }, config.formationUrl);
 
       logger.info('✅ Authentication successful\n');
     }
@@ -405,7 +405,7 @@ async function main() {
 
           // Use common stream processing function
           await processLessonStream(filteredLessons, {
-            mcpClient,
+            browser,
             structure,
             config,
             outputDir,
@@ -443,7 +443,7 @@ async function main() {
 
           // Use common stream processing function
           await processLessonStream(filteredLessons, {
-            mcpClient,
+            browser,
             structure,
             config,
             outputDir,
@@ -471,7 +471,7 @@ async function main() {
 
         // Use common stream processing function
         await processLessonStream(specificLessons, {
-          mcpClient,
+          browser,
           structure,
           config,
           outputDir,
@@ -517,7 +517,7 @@ async function main() {
 
         // Use common stream processing function
         await processLessonStream(filteredLessons, {
-          mcpClient,
+          browser,
           structure,
           config,
           outputDir,
@@ -546,9 +546,9 @@ async function main() {
     await writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf-8');
     logger.info({ path: summaryPath }, '📄 Saved extraction summary');
 
-    // 9. Close MCP connection (if we opened one)
-    if (mcpClient) {
-      await mcpClient.disconnect();
+    // 9. Close browser (if we opened one)
+    if (browser) {
+      await browser.disconnect();
     }
 
     // 10. Log final media stats

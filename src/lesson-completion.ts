@@ -5,7 +5,7 @@
  * This module provides auto-detection and marking functionality.
  */
 
-import type { MCPClient } from './mcp-client.js';
+import type { Browser } from './browser.js';
 import { createLogger } from './utils.js';
 
 const logger = createLogger('lesson-completion');
@@ -14,7 +14,7 @@ const logger = createLogger('lesson-completion');
  * Mark a lesson as complete by clicking the completion button and confirming
  */
 export async function markLessonComplete(
-  mcpClient: MCPClient,
+  browser: Browser,
   lessonUrl: string,
   waitAfterConfirm: number = 2000
 ): Promise<boolean> {
@@ -22,8 +22,8 @@ export async function markLessonComplete(
     logger.info({ lessonUrl }, '🔘 Marking lesson as complete');
 
     // Navigate to the lesson
-    await mcpClient.navigate(lessonUrl);
-    await mcpClient.waitFor({ timeout: 2000 }); // Wait for page to settle
+    await browser.navigate(lessonUrl);
+    await browser.waitFor({ timeout: 2000 }); // Wait for page to settle
 
     // CSS Selectors verified on 2025-11-08 on a Teachizy formation
     // Completion button: <button class="button is-medium is-primary is-custom">
@@ -31,14 +31,14 @@ export async function markLessonComplete(
 
     // Click the "J'ai terminé cette leçon" button
     logger.debug({ lessonUrl }, 'Clicking "J\'ai terminé cette leçon" button');
-    await mcpClient.click('button.is-primary.is-custom');
+    await browser.click('button.is-primary.is-custom');
 
     // Wait for popup to appear
-    await mcpClient.waitFor({ timeout: 1000 });
+    await browser.waitFor({ timeout: 1000 });
 
     // Click the "Confirmer" button in popup
     logger.debug({ lessonUrl }, 'Clicking "Confirmer" button');
-    await mcpClient.click('button.is-danger');
+    await browser.click('button.is-danger');
 
     // Wait for confirmation to process
     await new Promise(resolve => setTimeout(resolve, waitAfterConfirm));
@@ -55,17 +55,17 @@ export async function markLessonComplete(
  * Try to access a lesson and check if it's accessible
  */
 export async function tryAccessLesson(
-  mcpClient: MCPClient,
+  browser: Browser,
   lessonUrl: string
 ): Promise<boolean> {
   try {
     logger.debug({ lessonUrl }, 'Trying to access lesson');
 
-    await mcpClient.navigate(lessonUrl);
-    await mcpClient.waitFor({ timeout: 2000 }); // Wait for page to settle
+    await browser.navigate(lessonUrl);
+    await browser.waitFor({ timeout: 2000 }); // Wait for page to settle
 
     // Take snapshot to check if we can see the lesson content
-    const snapshot = await mcpClient.snapshot();
+    const snapshot = await browser.snapshot();
 
     // Check for blocking messages (verified from actual tenant formation pages on 2025-11-10)
     // Two types of blocking messages:
@@ -108,18 +108,18 @@ export async function tryAccessLesson(
  * "Leçon terminée le [date]" text that appears at the bottom of completed lessons
  */
 export async function isLessonAlreadyComplete(
-  mcpClient: MCPClient,
+  browser: Browser,
   lessonUrl: string
 ): Promise<boolean> {
   try {
     logger.debug({ lessonUrl }, 'Checking if lesson is already marked as complete');
 
     // Navigate to the lesson
-    await mcpClient.navigate(lessonUrl);
-    await mcpClient.waitFor({ timeout: 2000 }); // Wait for page to settle
+    await browser.navigate(lessonUrl);
+    await browser.waitFor({ timeout: 2000 }); // Wait for page to settle
 
     // Take snapshot to check for completion indicator
-    const snapshot = await mcpClient.snapshot();
+    const snapshot = await browser.snapshot();
 
     // Check for completion indicator text
     // Verified pattern from actual tenant formation pages on 2025-11-10:
@@ -155,7 +155,7 @@ export async function isLessonAlreadyComplete(
  * 5. If still blocked → detection failure (doesn't require completion, or other issue)
  */
 export async function detectCompletionRequirement(
-  mcpClient: MCPClient,
+  browser: Browser,
   currentLessonUrl: string,
   nextLessonUrl: string,
   waitAfterConfirm: number = 2000
@@ -163,7 +163,7 @@ export async function detectCompletionRequirement(
   logger.info('🔍 Detecting if formation requires lesson completion marking');
 
   // Step 1: Try to access next lesson without marking current as complete
-  const initiallyAccessible = await tryAccessLesson(mcpClient, nextLessonUrl);
+  const initiallyAccessible = await tryAccessLesson(browser, nextLessonUrl);
 
   if (initiallyAccessible) {
     logger.info('✅ Next lesson accessible without marking - completion NOT required');
@@ -173,7 +173,7 @@ export async function detectCompletionRequirement(
   logger.info('⚠️ Next lesson blocked - testing if marking current lesson helps');
 
   // Step 2: Mark current lesson as complete
-  const marked = await markLessonComplete(mcpClient, currentLessonUrl, waitAfterConfirm);
+  const marked = await markLessonComplete(browser, currentLessonUrl, waitAfterConfirm);
 
   if (!marked) {
     logger.warn('⚠️ Failed to mark lesson as complete - assuming completion NOT required');
@@ -181,7 +181,7 @@ export async function detectCompletionRequirement(
   }
 
   // Step 3: Try to access next lesson again after marking
-  const accessibleAfterMarking = await tryAccessLesson(mcpClient, nextLessonUrl);
+  const accessibleAfterMarking = await tryAccessLesson(browser, nextLessonUrl);
 
   if (accessibleAfterMarking) {
     logger.info('✅ Marking lesson unlocked next lesson - completion IS required for this formation');

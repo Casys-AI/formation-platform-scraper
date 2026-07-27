@@ -30,21 +30,15 @@ Il est **spécialisé, pas générique** : il connaît Teachizy — sa connexion
 
 ## Installation
 
-Ce dépôt est autonome et comporte **deux fichiers `package.json` indépendants** : le scraper à la racine, et le serveur MCP Playwright embarqué sous `mcp-server/`. Ce ne sont pas des workspaces pnpm/npm — installez et compilez chacun séparément.
-
 ```bash
-# 1. Install and build the MCP Playwright server (drives the browser)
-cd mcp-server
-npm install
-npm run build
-cd ..
+# Installer les dépendances
+pnpm install   # ou : npm install
 
-# 2. Install and build the scraper
-pnpm install   # or: npm install
-pnpm build     # or: npm run build
+# Télécharger le Chromium piloté par Playwright
+npx playwright install chromium
 ```
 
-Le scraper lance le serveur MCP comme sous-processus stdio avec `cwd: 'mcp-server'` : il doit donc déjà être compilé (`mcp-server/dist/`) avant que vous ne lanciez la moindre commande du scraper.
+Le scraper pilote Chromium en interne via [Playwright](https://playwright.dev/) — aucun serveur ni étape de compilation séparés.
 
 ## Configuration
 
@@ -245,7 +239,7 @@ npx tsc --noEmit
 
 ## Dépannage
 
-- **« MCP server not found »** — compilez-le d'abord : `cd mcp-server && npm install && npm run build`.
+- **« Browser launch failed » / navigateur manquant** — téléchargez Chromium : `npx playwright install chromium`.
 - **Échec de l'authentification** — vérifiez `FORMATION_EMAIL`/`FORMATION_PASSWORD` dans `.env` ; lancez avec `PLAYWRIGHT_HEADLESS=false` pour observer le navigateur.
 - **Limite de débit de l'API Whisper** — augmentez `DELAY_BETWEEN_PAGES_MS`, ou traitez par lots et reprenez plus tard.
 

@@ -25,19 +25,19 @@ async function main() {
     }
 
     logger.info('Authenticating...');
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     const lessonId = process.argv[2] || DEFAULT_LESSON_ID;
     const url = `${formationUrl}/elements/${lessonId}`;
     logger.info({ url }, 'Navigating to lesson...');
-    await mcpClient.navigate(url);
+    await browser.navigate(url);
 
     logger.info('Waiting for page load...');
-    await mcpClient.waitFor({ timeout: 5000 });
+    await browser.waitFor({ timeout: 5000 });
 
     logger.info('Test 1: Simple h1 extraction');
     try {
-      const h1 = await mcpClient.evaluate(`document.querySelector('h1')?.textContent?.trim() || 'NOT FOUND'`);
+      const h1 = await browser.evaluate(`document.querySelector('h1')?.textContent?.trim() || 'NOT FOUND'`);
       logger.info({ h1 }, '✅ Test 1 passed');
     } catch (error) {
       logger.error({ error: error instanceof Error ? error.message : String(error) }, '❌ Test 1 failed');
@@ -45,7 +45,7 @@ async function main() {
 
     logger.info('Test 2: h1 parent finder');
     try {
-      const result = await mcpClient.evaluate(`
+      const result = await browser.evaluate(`
         (() => {
           const h1 = document.querySelector('h1');
           if (!h1) return { found: false };
@@ -76,7 +76,7 @@ async function main() {
       logger.error({ error: error instanceof Error ? error.message : String(error) }, '❌ Test 2 failed');
     }
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
     logger.info('✅ All tests complete');
   } catch (error) {
     logger.error({ error }, '❌ Tests failed');

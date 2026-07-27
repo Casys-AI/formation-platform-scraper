@@ -8,7 +8,7 @@
  * the formation URL passed in by the caller.
  */
 
-import { MCPClient } from './mcp-client.js';
+import { Browser } from './browser.js';
 import { createLogger, retry, redactEmail } from './utils.js';
 
 const logger = createLogger('auth');
@@ -41,7 +41,7 @@ function deriveLoginUrl(formationUrl: string): string {
 
 /**
  * Authenticate against a Teachizy-hosted formation and return an authenticated
- * MCP client with a persistent session.
+ * browser with a persistent session.
  *
  * Flow:
  * 1. Navigate to the formation's login page.
@@ -51,10 +51,10 @@ function deriveLoginUrl(formationUrl: string): string {
  * @param config The formation credentials.
  * @param formationUrl URL of the formation to scrape. Its origin is used to
  *   build the login URL and verify the authenticated state.
- * @returns Authenticated MCPClient instance.
+ * @returns Authenticated Browser instance.
  * @throws Error if authentication fails after retries.
  */
-export async function authenticate(config: AuthConfig, formationUrl: string): Promise<MCPClient> {
+export async function authenticate(config: AuthConfig, formationUrl: string): Promise<Browser> {
   const loginUrl = deriveLoginUrl(formationUrl);
 
   logger.info({ email: redactEmail(config.email), loginUrl }, '🔐 Starting authentication');
@@ -64,21 +64,21 @@ export async function authenticate(config: AuthConfig, formationUrl: string): Pr
     throw new Error('Formation email and password are required');
   }
 
-  const mcpClient = new MCPClient();
+  const browser = new Browser();
 
   // Connect ONCE - preserve cookies across requests
-  logger.info('🔌 Connecting to MCP Playwright server');
-  await mcpClient.connect();
+  logger.info('🔌 Launching browser');
+  await browser.connect();
 
   await retry(
     async () => {
       // Step 1: Navigate to the formation's login page
       logger.info({ loginUrl }, '📍 Navigating to formation login');
-      await mcpClient.navigate(loginUrl);
-      await mcpClient.waitFor({ timeout: 2000 });
+      await browser.navigate(loginUrl);
+      await browser.waitFor({ timeout: 2000 });
 
       // Step 2: If a previous session is still active, we may already be past login
-      const initialUrl = await mcpClient.evaluate('window.location.href');
+      const initialUrl = await browser.evaluate('window.location.href');
       if (!initialUrl.includes('/connexion')) {
         logger.info({ initialUrl }, '✅ Already authenticated (no login required)');
         return;
@@ -86,21 +86,21 @@ export async function authenticate(config: AuthConfig, formationUrl: string): Pr
 
       // Step 3: Fill the login form
       logger.info({ email: redactEmail(config.email) }, '📝 Filling login form');
-      await mcpClient.fillForm({
+      await browser.fillForm({
         'input[type="email"]': config.email,
         'input[type="password"]': config.password,
       });
 
       // Step 4: Submit
       logger.info('🖱️  Clicking Se connecter');
-      await mcpClient.click('button[type="submit"]');
+      await browser.click('button[type="submit"]');
 
       // Step 5: Wait for redirect after login
       logger.info('⏳ Waiting for redirect after login');
-      await mcpClient.waitFor({ timeout: 5000 });
+      await browser.waitFor({ timeout: 5000 });
 
       // Step 6: Verify we're no longer on the login page
-      const afterLoginUrl = await mcpClient.evaluate('window.location.href');
+      const afterLoginUrl = await browser.evaluate('window.location.href');
       logger.info({ afterLoginUrl }, '📍 Current URL after login');
 
       if (afterLoginUrl.includes('/connexion')) {
@@ -116,27 +116,27 @@ export async function authenticate(config: AuthConfig, formationUrl: string): Pr
     }
   );
 
-  return mcpClient;
+  return browser;
 }
 
 /**
  * Verify authentication by checking access to a protected page.
  *
- * @param mcpClient Authenticated MCP client.
+ * @param browser Authenticated browser.
  * @param formationUrl A protected formation URL to probe.
  * @returns true if navigation succeeds without landing on the login page.
  */
 export async function verifyAuthentication(
-  mcpClient: MCPClient,
+  browser: Browser,
   formationUrl: string
 ): Promise<boolean> {
   logger.info('🔍 Verifying authentication');
 
   try {
-    await mcpClient.navigate(formationUrl);
-    await mcpClient.waitFor({ timeout: 5000 });
+    await browser.navigate(formationUrl);
+    await browser.waitFor({ timeout: 5000 });
 
-    const currentUrl = await mcpClient.evaluate('window.location.href');
+    const currentUrl = await browser.evaluate('window.location.href');
     if (currentUrl.includes('/connexion')) {
       logger.error({ currentUrl }, '❌ Authentication verification failed (redirected to login)');
       return false;

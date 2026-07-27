@@ -11,7 +11,7 @@
 
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import type { MCPClient } from './mcp-client.js';
+import type { Browser } from './browser.js';
 import type { CourseStructure, Chapter, LessonMetadata } from './types.js';
 import { createLogger } from './utils.js';
 import { TIMEOUTS, VALIDATION, EMOJI_PATTERN } from './constants.js';
@@ -24,13 +24,13 @@ const OUTPUT_DIR = 'output';
 /**
  * Main discovery function - extracts complete course structure
  *
- * @param mcpClient Authenticated MCP client with active session
+ * @param browser Authenticated browser with active session
  * @param formationUrl URL of the formation index page to scrape
  * @param options Optional configuration
  * @returns Complete course structure with chapters and lessons
  */
 export async function discoverCourseStructure(
-  mcpClient: MCPClient,
+  browser: Browser,
   formationUrl: string,
   options: { maxChapters?: number } = {}
 ): Promise<CourseStructure> {
@@ -48,15 +48,15 @@ export async function discoverCourseStructure(
   try {
     // 1. Navigate to index page
     logger.info({ url: formationUrl }, 'Navigating to index page');
-    await mcpClient.navigate(formationUrl);
+    await browser.navigate(formationUrl);
 
     // 2. Wait for page load - CRITICAL: Content loads dynamically!
     logger.info(`⏳ Waiting for page load (${TIMEOUTS.PAGE_LOAD}ms for dynamic content)`);
-    await mcpClient.waitFor({ timeout: TIMEOUTS.PAGE_LOAD });
+    await browser.waitFor({ timeout: TIMEOUTS.PAGE_LOAD });
 
     // 3. Extract structure using evaluate() - runs in browser context
     logger.info('📊 Extracting structure from DOM using evaluate()');
-    const rawStructure = await extractStructureFromDOM(mcpClient, options.maxChapters);
+    const rawStructure = await extractStructureFromDOM(browser, options.maxChapters);
 
     // 4. Process and enrich with slug - Extract from URL instead of generating from title
     // URL format: .../mon-espace/formations/{course-slug}
@@ -115,18 +115,18 @@ export async function discoverCourseStructure(
  * This runs JavaScript directly in the browser context to access the real DOM,
  * not a YAML accessibility tree like snapshot() returns.
  *
- * @param mcpClient MCP client with loaded page
+ * @param browser browser with loaded page
  * @param maxChapters Optional limit on chapters to extract (for testing)
  * @returns Parsed course structure
  */
 async function extractStructureFromDOM(
-  mcpClient: MCPClient,
+  browser: Browser,
   maxChapters?: number
 ): Promise<CourseStructure> {
   logger.info('📊 Extracting structure from DOM');
 
   // Execute extraction script in browser context
-  const result = await mcpClient.evaluate(`
+  const result = await browser.evaluate(`
     (() => {
       // Extract course title from page
       const courseTitle = document.querySelector('h1')?.textContent?.trim() || 'Formation';

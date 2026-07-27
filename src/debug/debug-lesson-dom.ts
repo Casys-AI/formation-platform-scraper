@@ -27,27 +27,27 @@ async function main() {
 
     // Authenticate
     logger.info('Authenticating...');
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     // Navigate to lesson
     const url = `${formationUrl}/elements/${lessonId}`;
     logger.info({ url }, 'Navigating to lesson...');
-    await mcpClient.navigate(url);
+    await browser.navigate(url);
 
     // Wait for page load
     logger.info('Waiting for page load...');
-    await mcpClient.waitFor({ timeout: 5000 });
+    await browser.waitFor({ timeout: 5000 });
 
     logger.info('🔍 Inspecting DOM structure...\n');
 
     // Debug 1: Check h1 title
-    const h1Text = await mcpClient.evaluate(`
+    const h1Text = await browser.evaluate(`
       document.querySelector('h1')?.textContent?.trim() || 'NOT FOUND'
     `);
     logger.info({ h1Text }, '1. Page title (h1)');
 
     // Debug 2: Check all main container candidates
-    const containers = await mcpClient.evaluate(`
+    const containers = await browser.evaluate(`
       (() => {
         const candidates = [
           { selector: '.lesson-content', exists: !!document.querySelector('.lesson-content') },
@@ -64,7 +64,7 @@ async function main() {
     containers.forEach((c: any) => logger.info(`   ${c.selector}: ${c.exists ? '✅ EXISTS' : '❌ NOT FOUND'}`));
 
     // Debug 3: Count paragraphs in different containers
-    const paragraphCounts = await mcpClient.evaluate(`
+    const paragraphCounts = await browser.evaluate(`
       (() => {
         return {
           'document': document.querySelectorAll('p').length,
@@ -78,7 +78,7 @@ async function main() {
     Object.entries(paragraphCounts).forEach(([key, count]) => logger.info(`   ${key}: ${count} paragraphs`));
 
     // Debug 4: Get all paragraph text (first 3)
-    const paragraphTexts = await mcpClient.evaluate(`
+    const paragraphTexts = await browser.evaluate(`
       (() => {
         const paragraphs = Array.from(document.querySelectorAll('p'));
         return paragraphs.slice(0, 3).map(p => p.textContent?.trim()?.substring(0, 100));
@@ -88,7 +88,7 @@ async function main() {
     paragraphTexts.forEach((text: any, idx: number) => logger.info(`   ${idx + 1}. ${text}...`));
 
     // Debug 5: Check for iframes (YouTube/Vimeo)
-    const iframes = await mcpClient.evaluate(`
+    const iframes = await browser.evaluate(`
       (() => {
         const allIframes = Array.from(document.querySelectorAll('iframe'));
         return allIframes.map(iframe => ({
@@ -104,7 +104,7 @@ async function main() {
     });
 
     // Debug 6: Get main element's HTML structure (first 500 chars)
-    const mainHtml = await mcpClient.evaluate(`
+    const mainHtml = await browser.evaluate(`
       (() => {
         const main = document.querySelector('main');
         if (!main) return 'MAIN NOT FOUND';
@@ -132,7 +132,7 @@ async function main() {
     }
 
     // Debug 7: Try to find content using different strategies
-    const contentTests = await mcpClient.evaluate(`
+    const contentTests = await browser.evaluate(`
       (() => {
         const tests = [];
 
@@ -183,7 +183,7 @@ async function main() {
     });
 
     // Debug 8: Check for navigation buttons (might be interfering)
-    const navButtons = await mcpClient.evaluate(`
+    const navButtons = await browser.evaluate(`
       (() => {
         const buttons = Array.from(document.querySelectorAll('button'));
         return buttons
@@ -199,7 +199,7 @@ async function main() {
       logger.info(`   "${btn.text}" (in ${btn.parent})`);
     });
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
     logger.info('\n✅ DOM inspection complete');
   } catch (error) {
     logger.error({ error }, '❌ Inspection failed');

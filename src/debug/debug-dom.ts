@@ -22,28 +22,28 @@ async function main() {
     }
 
     logger.info('Authenticating...');
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     logger.info('Navigating to index page...');
-    await mcpClient.navigate(formationUrl);
+    await browser.navigate(formationUrl);
 
     logger.info('Waiting for page load...');
-    await mcpClient.waitFor({ timeout: 5000 });
+    await browser.waitFor({ timeout: 5000 });
 
     logger.info('Checking DOM...');
 
     // Debug 1: Check if ANY h2 elements exist
-    const h2Count = await mcpClient.evaluate(`document.querySelectorAll('h2').length`);
+    const h2Count = await browser.evaluate(`document.querySelectorAll('h2').length`);
     logger.info({ h2Count }, 'Total h2 elements found');
 
     // Debug 2: Get all h2 text content
-    const h2Texts = await mcpClient.evaluate(`
+    const h2Texts = await browser.evaluate(`
       Array.from(document.querySelectorAll('h2')).map(h2 => h2.textContent?.trim())
     `);
     logger.info({ h2Texts }, 'All h2 text content');
 
     // Debug 3: Check for "Chapitre" text anywhere
-    const chapitreCount = await mcpClient.evaluate(`
+    const chapitreCount = await browser.evaluate(`
       Array.from(document.querySelectorAll('h2')).filter(h2 =>
         (h2.textContent || '').includes('Chapitre')
       ).length
@@ -51,12 +51,12 @@ async function main() {
     logger.info({ chapitreCount }, 'h2 elements containing "Chapitre"');
 
     // Debug 4: Check entire body text for "Chapitre"
-    const bodyHasChapitre = await mcpClient.evaluate(`
+    const bodyHasChapitre = await browser.evaluate(`
       document.body.textContent?.includes('Chapitre') || false
     `);
     logger.info({ bodyHasChapitre }, 'Body contains "Chapitre"');
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
     logger.info('Done');
   } catch (error) {
     console.error('ERROR:', error);

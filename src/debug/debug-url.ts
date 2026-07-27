@@ -18,20 +18,20 @@ async function main() {
     }
 
     logger.info('Authenticating...');
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     logger.info('Navigating to index page...');
-    await mcpClient.navigate(formationUrl);
+    await browser.navigate(formationUrl);
 
     logger.info('Waiting 5 seconds...');
-    await mcpClient.waitFor({ timeout: 5000 });
+    await browser.waitFor({ timeout: 5000 });
 
     // Check current URL
-    const currentUrl = await mcpClient.evaluate(`window.location.href`);
+    const currentUrl = await browser.evaluate(`window.location.href`);
     logger.info({ currentUrl }, 'Current URL after navigation');
 
     // Check page title
-    const pageTitle = await mcpClient.evaluate(`document.title`);
+    const pageTitle = await browser.evaluate(`document.title`);
     logger.info({ pageTitle }, 'Page title');
 
     // Check if redirected
@@ -39,14 +39,14 @@ async function main() {
     logger.info({ isRedirected }, 'Was redirected?');
 
     // Check body length
-    const bodyLength = await mcpClient.evaluate(`document.body.innerHTML.length`);
+    const bodyLength = await browser.evaluate(`document.body.innerHTML.length`);
     logger.info({ bodyLength }, 'Body HTML length');
 
     // Sample body content
-    const bodySample = await mcpClient.evaluate(`document.body.textContent?.substring(0, 500)`);
+    const bodySample = await browser.evaluate(`document.body.textContent?.substring(0, 500)`);
     logger.info({ bodySample }, 'Body text sample (first 500 chars)');
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
     logger.info('Done');
   } catch (error) {
     console.error('ERROR:', error);

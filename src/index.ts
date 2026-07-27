@@ -43,18 +43,18 @@ async function testAuth() {
 
     logger.info({ email: redactEmail(email) }, '📧 Using credentials');
 
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     logger.info('✅ Authentication succeeded');
 
-    const isVerified = await verifyAuthentication(mcpClient, formationUrl);
+    const isVerified = await verifyAuthentication(browser, formationUrl);
     if (isVerified) {
       logger.info('✅ Authentication verified');
     } else {
       logger.error('❌ Authentication verification failed');
     }
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
 
     logger.info('🎉 Test complete');
   } catch (error) {
@@ -74,13 +74,13 @@ async function testDiscovery() {
 
     logger.info({ email: redactEmail(email) }, '📧 Using credentials');
 
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     logger.info('✅ Authentication succeeded');
 
     // Run discovery (limit to 2 chapters for testing)
     logger.info('🔍 Starting course discovery (first 2 chapters only)...');
-    const structure = await discoverCourseStructure(mcpClient, formationUrl, { maxChapters: 2 });
+    const structure = await discoverCourseStructure(browser, formationUrl, { maxChapters: 2 });
 
     logger.info({
       totalChapters: structure.chapters.length,
@@ -90,7 +90,7 @@ async function testDiscovery() {
       firstLessonId: structure.chapters[0]?.lessons[0]?.id,
     }, '✅ Discovery completed');
 
-    await mcpClient.disconnect();
+    await browser.disconnect();
 
     logger.info('🎉 Test complete');
   } catch (error) {

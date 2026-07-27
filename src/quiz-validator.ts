@@ -5,7 +5,7 @@
  * requires quiz completion to unlock the next lessons. Simply marking as complete
  * doesn't work - we need to actually answer the questions and submit.
  *
- * Solution: Use Playwright MCP to:
+ * Solution: Use Playwright to:
  * 1. Navigate to quiz URL
  * 2. Click "Commencer le quiz" or "Commencer le QCM" button
  * 3. Select the first answer for each question (radio buttons)
@@ -30,12 +30,12 @@ interface QuizValidationResult {
 /**
  * Automatically complete a quiz by selecting first answer for each question
  *
- * @param mcpClient - MCP client with browser automation (Playwright)
+ * @param browser - browser automation (Playwright)
  * @param quizUrl - Full URL to the quiz page
  * @returns Result indicating success and question count
  */
 export async function autoCompleteQuiz(
-  mcpClient: any,
+  browser: any,
   quizUrl: string
 ): Promise<QuizValidationResult> {
   try {
@@ -43,14 +43,14 @@ export async function autoCompleteQuiz(
 
     // 1. Navigate to quiz page
     logger.debug('Navigating to quiz page...');
-    await mcpClient.navigate(quizUrl);
+    await browser.navigate(quizUrl);
 
     // Wait for page to fully load (same as normal lessons)
     await sleep(5000);
 
     // 2. Check if quiz is already completed using DOM query (not snapshot)
     logger.debug('Checking if quiz already completed...');
-    const isCompleted = await mcpClient.evaluate(`() => {
+    const isCompleted = await browser.evaluate(`() => {
       const bodyText = document.body.innerText;
       return bodyText.includes('Quiz complété le') || bodyText.includes('QCM complété le');
     }`);
@@ -62,7 +62,7 @@ export async function autoCompleteQuiz(
 
     // 3. Find and click start button using DOM query (same approach as lesson extraction)
     logger.debug('Looking for quiz start button in DOM...');
-    const startButtonClicked = await mcpClient.evaluate(`() => {
+    const startButtonClicked = await browser.evaluate(`() => {
       // Look for button with text containing "Quiz" or "QCM" or "Commencer"
       const buttons = Array.from(document.querySelectorAll('button'));
       const startButton = buttons.find(btn => {
@@ -88,7 +88,7 @@ export async function autoCompleteQuiz(
     logger.debug('Waiting for quiz questions to appear...');
     let questionsFound = false;
     for (let i = 0; i < 5; i++) {
-      const hasQuestions = await mcpClient.evaluate(`() => {
+      const hasQuestions = await browser.evaluate(`() => {
         const articles = document.querySelectorAll('article');
         const radios = document.querySelectorAll('input[type="radio"]');
         return articles.length > 0 && radios.length > 0;
@@ -117,7 +117,7 @@ export async function autoCompleteQuiz(
     // 5. Select first answer for each question using JavaScript
     logger.debug('Selecting first answer for each question...');
 
-    const questionCount = await mcpClient.evaluate(`() => {
+    const questionCount = await browser.evaluate(`() => {
       // Find all articles (each article is a question)
       const questions = document.querySelectorAll('article');
       let selectedCount = 0;
@@ -165,7 +165,7 @@ export async function autoCompleteQuiz(
     // 5. Submit quiz answers using DOM query
     logger.debug('Submitting quiz answers...');
 
-    const submitClicked = await mcpClient.evaluate(`() => {
+    const submitClicked = await browser.evaluate(`() => {
       const buttons = Array.from(document.querySelectorAll('button'));
       const submitButton = buttons.find(btn =>
         btn.innerText.includes('Envoyer') || btn.innerText.includes('Valider')
@@ -184,7 +184,7 @@ export async function autoCompleteQuiz(
 
       // 6. Confirm submission (click "Ok !" button)
       logger.debug('Confirming submission...');
-      const confirmClicked = await mcpClient.evaluate(`() => {
+      const confirmClicked = await browser.evaluate(`() => {
         const buttons = Array.from(document.querySelectorAll('button'));
         const confirmButton = buttons.find(btn =>
           btn.innerText.includes('Ok') || btn.innerText.includes('Continuer')

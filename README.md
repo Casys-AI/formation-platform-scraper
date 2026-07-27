@@ -30,21 +30,15 @@ It is **specialised, not generic**: it knows Teachizy — its login, its `/mon-e
 
 ## Installation
 
-This is a standalone repo with **two independent `package.json` files**: the scraper at the root, and the embedded MCP Playwright server under `mcp-server/`. They are not a pnpm/npm workspace — install and build each separately.
-
 ```bash
-# 1. Install and build the MCP Playwright server (drives the browser)
-cd mcp-server
-npm install
-npm run build
-cd ..
-
-# 2. Install and build the scraper
+# Install dependencies
 pnpm install   # or: npm install
-pnpm build     # or: npm run build
+
+# Download the Chromium build Playwright drives
+npx playwright install chromium
 ```
 
-The scraper launches the MCP server as a stdio subprocess with `cwd: 'mcp-server'`, so it must already be built (`mcp-server/dist/`) before you run any scraper command.
+The scraper drives Chromium in-process via [Playwright](https://playwright.dev/) — no separate server or build step.
 
 ## Configuration
 
@@ -245,7 +239,7 @@ npx tsc --noEmit
 
 ## Troubleshooting
 
-- **"MCP server not found"** — build it first: `cd mcp-server && npm install && npm run build`.
+- **"Browser launch failed" / missing browser** — download Chromium: `npx playwright install chromium`.
 - **Authentication failed** — check `FORMATION_EMAIL`/`FORMATION_PASSWORD` in `.env`; run with `PLAYWRIGHT_HEADLESS=false` to watch the browser.
 - **Whisper API rate limit** — increase `DELAY_BETWEEN_PAGES_MS`, or run in batches and resume later.
 

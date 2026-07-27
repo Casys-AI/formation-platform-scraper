@@ -38,7 +38,7 @@ async function main() {
 
     // Step 1: Authenticate
     logger.info('Step 1: Authenticating...');
-    const mcpClient = await authenticate({ email, password }, formationUrl);
+    const browser = await authenticate({ email, password }, formationUrl);
 
     // Step 2: Load structure
     logger.info('Step 2: Loading course structure...');
@@ -46,7 +46,7 @@ async function main() {
 
     // Step 3: Extract lesson
     logger.info({ lessonId }, 'Step 3: Extracting lesson content...');
-    const completeLesson = await extractLessonContent(lessonId, mcpClient, structure);
+    const completeLesson = await extractLessonContent(lessonId, browser, structure);
 
     // Step 4: Display results
     logger.info('\\n' + '='.repeat(80));
@@ -124,7 +124,7 @@ async function main() {
     logger.info(`📝 Markdown saved to: ${markdownFile}`);
 
     // Cleanup
-    await mcpClient.disconnect();
+    await browser.disconnect();
 
     logger.info('\\n✅ Extraction test completed successfully!');
   } catch (error) {
