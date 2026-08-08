@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "formation-platform-scraper: Scraper for Teachizy-hosted formation platforms — dual auth, content extraction, Whisper transcription, AI formatting, link qualification, and pedagogical knowledge graph. Tenant-agnostic (nothing hardcoded), Playwright driven in-process."
+authors:
+  - family-names: Pesle
+    given-names: Erwan Lee
+year: 2026
+license: MIT
+repository-code: https://github.com/Casys-AI/formation-platform-scraper
+type: software
